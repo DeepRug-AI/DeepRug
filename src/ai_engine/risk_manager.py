@@ -44,30 +44,82 @@ class RiskManager:
             self.logger.error(f"Error calculating position size: {str(e)}")
             return 0
     
-    def calculate_stop_loss(self, entry_price, position_type='long'):
+    def calculate_stop_loss(self, entry_price, position_type='long', volatility=None):
         """Calculate dynamic stop loss based on market volatility and trend"""
         try:
-            # Calculate ATR-based stop loss
-            atr_multiplier = 2.0 if self.market_state == 'trending' else 1.5
-            volatility_stop = self._calculate_atr() * atr_multiplier
+            # Base stop loss percentage
+            base_stop = self.stop_loss
             
-            # Calculate percentage-based stop loss
-            percent_stop = entry_price * self.stop_loss
+            # Adjust for volatility if provided
+            if volatility is not None:
+                vol_adjustment = np.clip(volatility / 0.02, 0.5, 2.0)
+                base_stop *= vol_adjustment
             
-            # Use the larger of the two stops
-            stop_distance = max(volatility_stop, percent_stop)
-            
-            # Adjust stop distance based on market state
-            if self.market_state == 'volatile':
-                stop_distance *= 1.2
-            
+            # Calculate stop loss price
             if position_type == 'long':
-                return entry_price - stop_distance
+                stop_price = entry_price * (1 - base_stop)
             else:
-                return entry_price + stop_distance
+                stop_price = entry_price * (1 + base_stop)
+            
+            return stop_price
         except Exception as e:
             self.logger.error(f"Error calculating stop loss: {str(e)}")
             return None
+    
+    def _assess_market_conditions(self):
+        """Assess current market conditions for risk adjustment"""
+        try:
+            # Analyze position history for trend
+            if len(self.position_history) > 0:
+                recent_positions = self.position_history[-10:]
+                trend = np.mean(np.diff(recent_positions))
+                
+                if trend > 0.01:
+                    self.market_state = 'bullish'
+                    return 1.2
+                elif trend < -0.01:
+                    self.market_state = 'bearish'
+                    return 0.8
+            
+            self.market_state = 'neutral'
+            return 1.0
+        except Exception as e:
+            self.logger.error(f"Error assessing market conditions: {str(e)}")
+            return 1.0
+    
+    def _calculate_time_decay(self):
+        """Calculate time-based decay factor for risk adjustment"""
+        try:
+            time_diff = (datetime.now() - self.last_update).total_seconds() / 3600
+            decay = np.exp(-0.1 * time_diff)
+            return max(0.5, decay)
+        except Exception as e:
+            self.logger.error(f"Error calculating time decay: {str(e)}")
+            return 1.0
+    
+    def update_drawdown(self, current_value, peak_value):
+        """Update and monitor drawdown levels"""
+        try:
+            drawdown = (peak_value - current_value) / peak_value
+            self.drawdown_history.append(drawdown)
+            
+            # Check if max drawdown exceeded
+            if drawdown > self.max_drawdown:
+                return False
+            
+            return True
+        except Exception as e:
+            self.logger.error(f"Error updating drawdown: {str(e)}")
+            return True
+    
+    def get_risk_metrics(self):
+        """Get current risk metrics summary"""
+        return {
+            'market_state': self.market_state,
+            'current_drawdown': self.drawdown_history[-1] if self.drawdown_history else 0,
+            'max_historical_drawdown': max(self.drawdown_history) if self.drawdown_history else 0,
+            'position_utilization': np.mean(self.position_history[-10:]) if self.position_history else 0
+        }
     
     def _calculate_atr(self, period=14):
         """Calculate Average True Range for dynamic stop loss"""

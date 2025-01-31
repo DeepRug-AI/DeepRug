@@ -1,20 +1,20 @@
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score, TimeSeriesSplit
+from sklearn.metrics import precision_score, recall_score, f1_score
 import joblib
 import logging
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import precision_score, recall_score, f1_score
 
 class MLPredictor:
     def __init__(self):
-        self.model = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=10,
-            random_state=42
-        )
+        self.models = {
+            'rf': RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42),
+            'gb': GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
+        }
         self.scaler = StandardScaler()
         self.logger = logging.getLogger(__name__)
+        self.selected_model = 'rf'
         
     def prepare_features(self, technical_indicators):
         """Prepare features for ML model"""
@@ -32,8 +32,24 @@ class MLPredictor:
             rsi_momentum = 1 if technical_indicators['rsi'] > 50 else -1 if technical_indicators['rsi'] < 50 else 0
             volatility_factor = np.log1p(technical_indicators['volatility']) if technical_indicators['volatility'] else 0
             
+            # Add MACD features
+            macd_signal = 1 if technical_indicators['macd'] > technical_indicators['macd_signal'] else -1
+            macd_trend = np.sign(technical_indicators['macd'])
+            
+            # Add volume and price features
+            volume_trend = np.sign(technical_indicators['obv'])
+            price_momentum = technical_indicators['close'] / technical_indicators['sma_20'] - 1
+            
             # Combine all features
-            features = basic_features + [sma_ratio, rsi_momentum, volatility_factor]
+            features = basic_features + [
+                sma_ratio,
+                rsi_momentum,
+                volatility_factor,
+                macd_signal,
+                macd_trend,
+                volume_trend,
+                price_momentum
+            ]
             features = np.array(features).reshape(1, -1)
             
             # Handle missing values
@@ -48,26 +64,39 @@ class MLPredictor:
         """Make price movement prediction with confidence score"""
         try:
             if features is None:
-                return 0, 0.0
+                return None, 0.0
                 
-            # Get model prediction and probability
-            prediction = self.model.predict(features)[0]
-            probabilities = self.model.predict_proba(features)[0]
-            confidence = max(probabilities)
+            model = self.models[self.selected_model]
+            prediction = model.predict(features)[0]
+            confidence = np.max(model.predict_proba(features)[0])
             
-            # Dynamic confidence threshold based on probability distribution
-            threshold = 0.6 + (max(probabilities) - min(probabilities)) * 0.1
-            
-            if confidence < threshold:
-                return 0, confidence
-            
-            # Convert to trading signal
-            signal = 1 if prediction == 1 else -1
-            
-            return signal, confidence
+            return prediction, confidence
         except Exception as e:
             self.logger.error(f"Error making prediction: {str(e)}")
-            return 0, 0.0
+            return None, 0.0
+    
+    def evaluate_model(self, X, y):
+        """Evaluate model performance using time series cross-validation"""
+        try:
+            tscv = TimeSeriesSplit(n_splits=5)
+            scores = cross_val_score(self.models[self.selected_model], X, y, cv=tscv)
+            
+            y_pred = self.models[self.selected_model].predict(X)
+            precision = precision_score(y, y_pred, average='weighted')
+            recall = recall_score(y, y_pred, average='weighted')
+            f1 = f1_score(y, y_pred, average='weighted')
+            
+            return {
+                'cv_scores': scores,
+                'cv_mean': scores.mean(),
+                'cv_std': scores.std(),
+                'precision': precision,
+                'recall': recall,
+                'f1_score': f1
+            }
+        except Exception as e:
+            self.logger.error(f"Error evaluating model: {str(e)}")
+            return None
     
     def train(self, X, y):
         """Train the ML model with cross-validation"""

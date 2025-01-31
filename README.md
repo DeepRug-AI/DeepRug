@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" width="200" height="200" alt="DeepRug Logo">
+</p>
+
 # DeepRug (RUG) Project
 
 [中文文档](README_CN.md)
@@ -30,7 +34,7 @@ DeepRug is a revolutionary AI quantitative trading platform that perfectly combi
 - Copy trading fee token discount
 - Governance voting rights
 - Strategy data access rights
-- Deflationary burn mechanism
+- Deflationary burn mechanism (0-50% burn rate)
 
 ## 🔥 Community Features
 - AI Trading Live Stream
@@ -40,10 +44,30 @@ DeepRug is a revolutionary AI quantitative trading platform that perfectly combi
 
 ## 📚 Technical Architecture
 
-### Backend System
-- AI Trading Engine (Python/DeepSeek)
-- Smart Contract System (Solidity)
-- Real-time Data Processing Service (Node.js)
+### Smart Contract System
+- FollowTrade Contract: Manages copy trading and profit distribution
+  - Follow trade management with fee system
+  - Profit distribution (70% trader / 30% follower)
+  - Token burn mechanism (0-50% rate)
+  - Reward withdrawal system
+- MemeInteraction Contract: Handles social engagement
+- TokenGovernance Contract: Manages platform governance
+- SocialInteraction Contract: Manages community features
+
+### AI Engine (Python)
+- Market data analysis (market_data.py)
+- Trading signal generation (signal_generator.py)
+- Risk management system (risk_manager.py)
+- ML model implementation (ml_models.py)
+- Trading execution engine (trading_engine.py)
+- Meme and voice content generation
+
+### Backend Services (Node.js)
+- Real-time data processing service
+- WebSocket server (ws://localhost:8081)
+- Trading service integration
+- Social media integration
+- Follow trade service
 
 ### Frontend Application
 - Web Interface (React)
@@ -62,9 +86,9 @@ DeepRug is a revolutionary AI quantitative trading platform that perfectly combi
 
 ## 🚀 Development Roadmap
 
-### Phase One: Infrastructure
+### Phase One: Infrastructure (In Progress)
 - [ ] Build AI Trading Engine
-- [ ] Develop Smart Contracts
+- [x] Develop Smart Contracts
 - [ ] Build Data Processing System
 
 ### Phase Two: Core Features
@@ -76,6 +100,10 @@ DeepRug is a revolutionary AI quantitative trading platform that perfectly combi
 - [ ] Implement Social Interaction Features
 - [ ] Develop NFT Badge System
 - [ ] Build Data Analysis Platform
+
+## ⚠️ Project Status
+
+This project is currently under active development. The core smart contracts and basic infrastructure are implemented, but many features are still being developed and refined. We welcome community contributions to help accelerate development.
 
 ## 📝 Contribution Guidelines
 
