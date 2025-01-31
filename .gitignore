@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.env
+
+# Build outputs
+dist/
+build/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Solidity
+artifacts/
+cache/
+
+# Misc
+.DS_Store
+Thumbs.db
