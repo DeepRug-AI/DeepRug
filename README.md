@@ -1,5 +1,7 @@
 # DeepRug (RUG) Project
 
+[中文文档](README_CN.md)
+
 > Let AI tear open the quantitative black box - either get rich or Rug Pull yourself!
 
 ## 🚀 Project Overview
