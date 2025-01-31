@@ -4,7 +4,7 @@
 
 # DeepRug (RUG) Project
 
-[中文文档](README_CN.md)
+[中文文档](README_CN.md) | [License](LICENSE)
 
 > Let AI tear open the quantitative black box - either get rich or Rug Pull yourself!
 
